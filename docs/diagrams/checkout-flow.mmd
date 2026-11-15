@@ -1,0 +1,39 @@
+sequenceDiagram
+    autonumber
+    actor Customer as Customer (Client)
+    participant API as Checkout Controller
+    participant CS as Checkout Service
+    participant PE as Server Pricing Engine
+    participant DB as MySQL Database
+
+    Customer->>API: POST /api/v1/checkout (Idempotency-Key: UUID)
+    API->>CS: processCheckout(cart, address, couponCode, key)
+    
+    CS->>DB: Check idempotency_key for user
+    alt Key already exists
+        DB-->>CS: Return existing order
+        CS-->>Customer: HTTP 200 (Existing Order Details)
+    else New Request
+        CS->>DB: Fetch authoritative product prices
+        CS->>PE: Compute Subtotal = SUM(price * qty) using BigDecimal
+        alt Coupon Provided
+            CS->>PE: Validate coupon rules & calculate discount
+        end
+        CS->>PE: Final Total = Subtotal - Discount
+
+        Note over CS,DB: Sort products ascending by ID to prevent deadlocks
+        loop Each ordered item
+            CS->>DB: UPDATE products SET stock = stock - qty, version = version + 1 WHERE id = id AND stock >= qty
+            alt Stock not available (0 rows updated)
+                DB-->>CS: 0 rows affected
+                CS-->>Customer: HTTP 409 Conflict (Insufficient stock, rollback transaction)
+            end
+        end
+
+        CS->>DB: INSERT into orders (status: 'PLACED')
+        CS->>DB: INSERT into order_items (price snapshots)
+        CS->>DB: INSERT into order_status_history (initial status: 'PLACED')
+        CS->>DB: Clear customer cart
+        CS-->>Customer: HTTP 201 Created (Order Placed, awaiting payment)
+    end
+

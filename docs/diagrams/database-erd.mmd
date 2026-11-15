@@ -1,0 +1,79 @@
+erDiagram
+    users ||--o{ orders : places
+    users ||--o| carts : owns
+    categories ||--o{ categories : "parent/sub"
+    categories ||--o{ products : contains
+    carts ||--o{ cart_items : contains
+    products ||--o{ cart_items : references
+    orders ||--o{ order_items : contains
+    products ||--o{ order_items : snapshot
+    coupons ||--o{ orders : applies
+    orders ||--o{ order_status_history : audits
+
+    users {
+        bigint id PK
+        varchar email UK
+        varchar password_hash
+        varchar first_name
+        varchar last_name
+        varchar role
+        boolean enabled
+        timestamp created_at
+    }
+
+    products {
+        bigint id PK
+        varchar sku UK
+        varchar title
+        decimal price
+        int stock
+        bigint category_id FK
+        boolean active
+        bigint version
+    }
+
+    orders {
+        bigint id PK
+        varchar order_number UK
+        bigint user_id FK
+        varchar idempotency_key UK
+        varchar status
+        decimal subtotal
+        decimal discount_amount
+        decimal total_amount
+        text shipping_address
+        timestamp created_at
+    }
+
+    order_items {
+        bigint id PK
+        bigint order_id FK
+        bigint product_id FK
+        varchar product_title
+        decimal unit_price
+        int quantity
+        decimal subtotal
+    }
+
+    order_status_history {
+        bigint id PK
+        bigint order_id FK
+        varchar previous_status
+        varchar new_status
+        varchar changed_by
+        varchar reason
+        timestamp created_at
+    }
+
+    coupons {
+        bigint id PK
+        varchar code UK
+        varchar discount_type
+        decimal discount_value
+        decimal min_order_value
+        int usage_limit
+        int times_used
+        datetime expires_at
+        boolean active
+    }
+

@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> PLACED : Checkout Submitted & Inventory Reserved
+
+    PLACED --> PAID : Payment Confirmed (Stock retained)
+    PLACED --> PAYMENT_FAILED : Payment Rejected / Gateway Error (Stock restored via compensation)
+    PLACED --> CANCELLED : Customer / System Cancellation (Stock restored)
+
+    PAID --> PACKED : Warehouse Staff Packs Items
+    PAID --> CANCELLED : Permitted Administrative Cancellation (Stock restored)
+
+    PACKED --> SHIPPED : Carrier Dispatches Package
+    SHIPPED --> DELIVERED : Package Received by Customer
+
+    PAYMENT_FAILED --> [*] : Terminal State
+    CANCELLED --> [*] : Terminal State
+    DELIVERED --> [*] : Terminal State
+

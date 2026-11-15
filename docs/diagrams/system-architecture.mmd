@@ -1,0 +1,31 @@
+graph TD
+    Client["Client Browser<br/>(React 18 + TypeScript SPA)"]
+    Nginx["Nginx Reverse Proxy & Static Server<br/>(Port 8080)"]
+    Backend["Spring Boot 3.3.4 Application<br/>(Java 21 LTS - Port 8081 / 8080)"]
+    MySQL[("MySQL 8.0 Database Engine<br/>(Port 3306)")]
+
+    Client -->|HTTP GET / Assets| Nginx
+    Client -->|API Requests /api/v1/*| Nginx
+    Nginx -->|Reverse Proxy /api/*| Backend
+
+    subgraph BackendServices["Spring Boot Core Engine"]
+        Security["Spring Security 6<br/>Stateless JWT + BCrypt"]
+        Catalog["Catalog & Inventory<br/>Atomic Row Updates"]
+        Pricing["Server Pricing Engine<br/>BigDecimal Arithmetic"]
+        Checkout["Checkout & Idempotency<br/>Unique Key Constraint"]
+        StateMachine["Order State Machine<br/>Audited Transitions"]
+        Coupons["Coupon Validation Engine<br/>Atomic Limit Tracking"]
+    end
+
+    Backend --> Security
+    Backend --> Catalog
+    Backend --> Pricing
+    Backend --> Checkout
+    Backend --> StateMachine
+    Backend --> Coupons
+
+    Catalog -->|Atomic UPDATE ... WHERE stock >= qty| MySQL
+    Checkout -->|Transactional INSERT & Unique Key| MySQL
+    StateMachine -->|INSERT order_status_history| MySQL
+    Coupons -->|SELECT FOR UPDATE / Atomic Limit| MySQL
+
